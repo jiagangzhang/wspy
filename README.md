@@ -208,13 +208,14 @@ has completely been written to the socket. You will probably not need this
 unless you are doing something advanced or have to clear a buffer in a
 high-performance application.
 
-Note:
-EPOLL is not supported on most recent Mac, if you don't need the async fuctions and will only use the blocking send() recv(), commment out the 'from async import AsyncConnection, AsyncServer' in the __init__.py and redo 'python setup.py instal' to re-install wspy, this forked edtion has already commented out the EPOLL related parts
+__Note__:
+EPOLL is not supported on most recent Mac, if you don't need the async fuctions and will only use the blocking send() recv(), commment out the 'from async import AsyncConnection, AsyncServer' in the '__init__.py' and redo 'python setup.py instal' to re-install wspy, this forked edtion has already finished that so using async features will raise import error.
+
 If you want async send and receive, use [tornado-websocket-client](https://github.com/ilkerkesen/tornado-websocket-client-example/blob/master/client.py) or [autobahn](https://github.com/crossbario/autobahn-python) instead
 
 Extensions(client)
-==========
-support deflate-permessage extension for client, the implementation is blocking, can be used with locust.io for websocket load /performance test
+=====================
+Support deflate-permessage extension for client, the implementation is blocking, can be used with [locust.io](http://www.locust.io/) for websocket load /performance test, or simply debug the server websocket implementation.
 
     import wspy
     #import ssl
@@ -224,17 +225,18 @@ support deflate-permessage extension for client, the implementation is blocking,
 
     Ext=DeflateMessage()
     Ext.request={'client_max_window_bits': zlib.MAX_WBITS,
-            'client_no_context_takeover': False}        #overwrite request to use DeflateMessage class, which is originally designed for servers
+            'client_no_context_takeover': False}       
+    #overwrite request to use DeflateMessage class, which is originally designed for servers
 
     class NewClient(wspy.Connection):
-      pass      #optional
+      pass
 
     sock=wspy.websocket(origin='https://www.websocket.org',extensions=[Ext])      # origin is optional
     sock.connect(('echo.xxx.com',80))
 
     conn=NewClient(sock)
     payload='''{some json}'''
-    msg=wspy.message.create_message(0x1,payload)    # opcode=01 for text message
+    msg=create_message(0x1,payload)    # opcode=01 for text message
     conn.send(msg,mask=True)                        # mask=True to enable deflate, send is blocking
     print 'sent announce'
     response1=conn.recv()                           # recv() is blocking
@@ -249,3 +251,39 @@ Secure sockets with SSL(client)
     sock=wspy.websocket()
     sock.enable_ssl()     # simple ssl implementation without cert validation
     sock.connect(('echo.xxx.com',443))
+
+
+Frame debug
+==================
+The wspy source code can be hacked to show sent and received frames, so you can see clearly what is being sent and what is being receivedm, and what is going wrong.
+Example:
+    connection.py
+        line 90 
+            print frame
+            #print frame.payload
+    handshake.py
+        line 44
+            print raw
+            print headers
+        line 103
+            print hdr
+        line 241
+            print 'sent headers'
+            print 'handled response'
+        line 283
+            print name,',',accept_params
+            for ext in self.wsock.extensions:
+                    print ext
+                    if name in ext.names:
+                        print name
+    websocket.py
+        line 131
+            print 'complete connect'
+        line 140
+            print frame
+
+Bugs(maybe)
+===============
+The [echo.websocket.org](echo.websocket.org) will not accept IP address based Host in handshake headers, so connection to this echo server will fail. 
+Change the following code in handshake.py and redo "python setup.py install" to make it work
+    yield 'Host', '%s:%d' % self.sock.getpeername() ->  yield 'Host', 'echo.websocket.org'
