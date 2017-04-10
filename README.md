@@ -209,6 +209,7 @@ unless you are doing something advanced or have to clear a buffer in a
 high-performance application.
 
 __Note__:
+
 EPOLL is not supported on most recent Mac, if you don't need the async fuctions and will only use the blocking send() recv(), commment out the 'from async import AsyncConnection, AsyncServer' in the '__init__.py' and redo 'python setup.py instal' to re-install wspy, this forked edtion has already finished that so using async features will raise import error.
 
 If you want async send and receive, use [tornado-websocket-client](https://github.com/ilkerkesen/tornado-websocket-client-example/blob/master/client.py) or [autobahn](https://github.com/crossbario/autobahn-python) instead
@@ -236,8 +237,8 @@ Support deflate-permessage extension for client, the implementation is blocking,
 
     conn=NewClient(sock)
     payload='''{some json}'''
-    msg=create_message(0x1,payload)    # opcode=01 for text message
-    conn.send(msg,mask=True)                        # mask=True to enable deflate, send is blocking
+    msg=create_message(0x1,payload)                 # opcode=0x1 for text message
+    conn.send(msg,mask=True)                        # mask=True to enable deflate, send() is blocking
     print 'sent announce'
     response1=conn.recv()                           # recv() is blocking
     print response1.payload
@@ -246,17 +247,21 @@ Support deflate-permessage extension for client, the implementation is blocking,
 
 Secure sockets with SSL(client)
 =======================
+wspy use the basic ssl module in python, for details of usage, please refer to ssl in python.org
+
     import wspy
     import ssl
     sock=wspy.websocket()
-    sock.enable_ssl()     # simple ssl implementation without cert validation
+    sock.enable_ssl()                              # simple ssl implementation without cert validation
     sock.connect(('echo.xxx.com',443))
 
 
 Frame debug
 ==================
 The wspy source code can be hacked to show sent and received frames, so you can see clearly what is being sent and what is being receivedm, and what is going wrong.
+
 Example:
+
     connection.py
         line 90 
             print frame
@@ -285,5 +290,7 @@ Example:
 Bugs(maybe)
 ===============
 The [echo.websocket.org](echo.websocket.org) will not accept IP address based Host in handshake headers, so connection to this echo server will fail. 
+
 Change the following code in handshake.py and redo "python setup.py install" to make it work
+
     yield 'Host', '%s:%d' % self.sock.getpeername() ->  yield 'Host', 'echo.websocket.org'
