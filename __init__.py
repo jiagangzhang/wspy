@@ -12,4 +12,4 @@ from errors import SocketClosed, HandshakeError, PingError, SSLError
 from extension import Extension
 from deflate_frame import DeflateFrame
 from deflate_message import DeflateMessage
-from async import AsyncConnection, AsyncServer
+# from async import AsyncConnection, AsyncServer
